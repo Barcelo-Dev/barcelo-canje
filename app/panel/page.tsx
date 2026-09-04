@@ -37,6 +37,11 @@ export default async function PanelPage() {
         <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4 sm:px-6">
           <img src="/logo.png" alt="Barceló Guatemala City" className="h-7 w-auto" />
           <div className="flex items-center gap-3">
+            {session.role === "admin" && (
+              <a href="/panel/usuarios" className="rounded-lg border border-barcelo-gray/30 px-3 py-1.5 text-sm font-medium text-barcelo-ink transition hover:bg-barcelo-cream">
+                Usuarios
+              </a>
+            )}
             <div className="hidden text-right sm:block">
               <p className="text-sm font-medium text-barcelo-ink">{session.name || session.email}</p>
               <p className="text-xs text-barcelo-gray">{roleLabel[session.role ?? ""] ?? "Sin rol"}</p>
