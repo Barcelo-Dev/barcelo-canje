@@ -36,6 +36,7 @@ export async function POST(request: Request) {
       coupon_redeemed_at: new Date().toISOString(),
       reward_given: reward,
       redeemed_by_name: who,
+      redeemed_by_id: session.userId,
     })
     .eq("id", sub.id)
     .eq("coupon_redeemed", false); // evita doble canje simultáneo

@@ -126,7 +126,7 @@ export default function RedeemForm() {
     <form onSubmit={lookup} className="rounded-2xl bg-white p-6 shadow-lg">
       <label htmlFor="code" className="mb-1.5 block text-sm font-medium text-barcelo-ink">Código del cupón</label>
       <input id="code" type="text" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())}
-        placeholder="BARCELO-XXXXXX" autoComplete="off"
+        placeholder="B-XXXXX" autoComplete="off"
         className="w-full rounded-lg border border-barcelo-gray/30 px-4 py-3 font-mono text-base tracking-wider outline-none focus:border-barcelo-teal focus:ring-2 focus:ring-barcelo-teal/20" />
       {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
       <button type="submit" disabled={loading} className="mt-4 w-full rounded-lg bg-barcelo-teal px-4 py-3 text-base font-semibold text-white hover:bg-barcelo-deep disabled:opacity-60">

@@ -3,8 +3,16 @@ import { getSession, canRedeem, canView } from "@/lib/roles";
 import { createAdminClient } from "@/lib/supabase/admin";
 import RedeemForm from "./RedeemForm";
 import RedemptionsView, { type Redemption } from "./RedemptionsView";
+import MisCanjesHoy, { type CanjeHoy } from "./MisCanjesHoy";
 
 export const dynamic = "force-dynamic";
+
+// Instante UTC del inicio de HOY en hora de Guatemala (00:00 GT = 06:00 UTC).
+function inicioHoyGT() {
+  const p = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Guatemala", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
+  const g = (t: string) => Number(p.find(x => x.type === t)!.value);
+  return new Date(Date.UTC(g("year"), g("month") - 1, g("day"), 6, 0, 0)).toISOString();
+}
 
 const roleLabel: Record<string, string> = {
   camarero: "Camarero",
@@ -18,11 +26,24 @@ export default async function PanelPage() {
 
   const canR = canRedeem(session.role);
   const canV = canView(session.role);
+  const admin = createAdminClient();
 
-  // Cargar canjes solo si el rol puede verlos
+  // Canjes de HOY del cajero actual (para quien puede canjear).
+  let misCanjes: CanjeHoy[] = [];
+  if (canR) {
+    const { data } = await admin
+      .from("subscribers")
+      .select("id, full_name, coupon_code, reward_given, coupon_redeemed_at")
+      .eq("coupon_redeemed", true)
+      .eq("redeemed_by_id", session.userId)
+      .gte("coupon_redeemed_at", inicioHoyGT())
+      .order("coupon_redeemed_at", { ascending: false });
+    misCanjes = (data ?? []) as CanjeHoy[];
+  }
+
+  // Historial completo solo si el rol puede verlo (supervisor/admin).
   let redemptions: Redemption[] = [];
   if (canV) {
-    const admin = createAdminClient();
     const { data } = await admin
       .from("subscribers")
       .select("id, full_name, email, room_number, coupon_code, reward_given, redeemed_by_name, coupon_redeemed_at")
@@ -73,12 +94,19 @@ export default async function PanelPage() {
 
         {canR && (
           <section className={canV ? "mb-10" : ""}>
-            <h1 className="font-display text-2xl font-bold text-barcelo-ink">Canjear cupón</h1>
-            <p className="mt-1 text-sm text-barcelo-gray">
-              Ingresa el código que presenta el huésped y registra qué se le entregó.
-            </p>
-            <div className="mt-5 max-w-lg">
-              <RedeemForm />
+            <div className="mx-auto max-w-lg text-center">
+              <h1 className="font-display text-2xl font-bold text-barcelo-ink">Canjear cupón</h1>
+              <p className="mt-1 text-sm text-barcelo-gray">
+                Ingresa el código que presenta el huésped y registra qué se le entregó.
+              </p>
+              <div className="mt-5 text-left">
+                <RedeemForm />
+              </div>
+            </div>
+
+            {/* Mis canjes de hoy (del cajero actual) */}
+            <div className="mt-10">
+              <MisCanjesHoy rows={misCanjes} />
             </div>
           </section>
         )}
