@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-type Client = { name: string | null; email: string | null; room: string | null; coupon: string; confirmed?: boolean };
+type Client = { name: string | null; email: string | null; room: string | null; coupon: string; confirmed?: boolean; vence?: string };
 type Redemption = { reward: string | null; by: string | null; at: string | null };
 
 function fmt(iso: string | null) {
@@ -12,17 +12,18 @@ function fmt(iso: string | null) {
 
 export default function RedeemForm() {
   const [code, setCode] = useState("");
-  const [step, setStep] = useState<"input" | "found" | "already" | "done">("input");
+  const [step, setStep] = useState<"input" | "found" | "already" | "expired" | "done">("input");
   const [client, setClient] = useState<Client | null>(null);
   const [prev, setPrev] = useState<Redemption | null>(null);
   const [reward, setReward] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [doneMsg, setDoneMsg] = useState("");
+  const [venceMsg, setVenceMsg] = useState("");
 
   function reset() {
     setCode(""); setStep("input"); setClient(null); setPrev(null);
-    setReward(""); setError(""); setDoneMsg("");
+    setReward(""); setError(""); setDoneMsg(""); setVenceMsg("");
   }
 
   async function lookup(e: React.FormEvent) {
@@ -36,6 +37,7 @@ export default function RedeemForm() {
       const data = await res.json();
       if (data.status === "ok") { setClient(data.client); setStep("found"); }
       else if (data.status === "already_redeemed") { setClient(data.client); setPrev(data.redemption); setStep("already"); }
+      else if (data.status === "expired") { setClient(data.client); setVenceMsg(data.vence ?? ""); setStep("expired"); }
       else setError("No encontramos ese código. Verifícalo.");
     } catch { setError("Problema de conexión. Inténtalo de nuevo."); }
     finally { setLoading(false); }
@@ -70,6 +72,24 @@ export default function RedeemForm() {
     );
   }
 
+  if (step === "expired") {
+    return (
+      <div className="rounded-2xl bg-white p-6 shadow-lg">
+        <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+          Este cupón venció{venceMsg ? ` el ${venceMsg}` : ""}. Los cupones son válidos por 1 semana desde que se generan.
+        </div>
+        <dl className="mt-4 space-y-2 text-sm">
+          <Row k="Cliente" v={client?.name || "—"} />
+          <Row k="Cupón" v={client?.coupon || "—"} mono />
+          <Row k="Venció" v={venceMsg || "—"} />
+        </dl>
+        <button onClick={reset} className="mt-6 w-full rounded-lg border border-barcelo-gray/30 px-4 py-2.5 text-sm font-medium text-barcelo-ink hover:bg-barcelo-cream">
+          Buscar otro código
+        </button>
+      </div>
+    );
+  }
+
   if (step === "already") {
     return (
       <div className="rounded-2xl bg-white p-6 shadow-lg">
@@ -97,6 +117,7 @@ export default function RedeemForm() {
           <Row k="Cliente" v={client?.name || "Sin nombre"} />
           <Row k="Cupón" v={client?.coupon || "—"} mono />
           <Row k="Habitación" v={client?.room || "—"} />
+          {client?.vence && <Row k="Válido hasta" v={client.vence} />}
           {client && client.confirmed === false && (
             <p className="rounded bg-amber-50 px-2 py-1 text-xs text-amber-800">Nota: este correo no fue confirmado por el huésped.</p>
           )}
@@ -126,7 +147,7 @@ export default function RedeemForm() {
     <form onSubmit={lookup} className="rounded-2xl bg-white p-6 shadow-lg">
       <label htmlFor="code" className="mb-1.5 block text-sm font-medium text-barcelo-ink">Código del cupón</label>
       <input id="code" type="text" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())}
-        placeholder="B-XXXXX" autoComplete="off"
+        placeholder="BH-XXXXX" autoComplete="off"
         className="w-full rounded-lg border border-barcelo-gray/30 px-4 py-3 font-mono text-base tracking-wider outline-none focus:border-barcelo-teal focus:ring-2 focus:ring-barcelo-teal/20" />
       {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
       <button type="submit" disabled={loading} className="mt-4 w-full rounded-lg bg-barcelo-teal px-4 py-3 text-base font-semibold text-white hover:bg-barcelo-deep disabled:opacity-60">

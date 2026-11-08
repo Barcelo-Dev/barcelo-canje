@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession, canRedeem } from "@/lib/roles";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { estaVencido, venceTexto } from "@/lib/vigencia";
 
 export async function POST(request: Request) {
   const session = await getSession();
@@ -20,13 +21,15 @@ export async function POST(request: Request) {
   // Verificar estado actual
   const { data: sub } = await admin
     .from("subscribers")
-    .select("id, coupon_redeemed")
+    .select("id, coupon_redeemed, created_at")
     .eq("coupon_code", code)
     .single();
 
   if (!sub) return NextResponse.json({ error: "Cupón no encontrado." }, { status: 404 });
   if (sub.coupon_redeemed)
     return NextResponse.json({ error: "Este cupón ya fue canjeado." }, { status: 409 });
+  if (estaVencido(sub.created_at))
+    return NextResponse.json({ error: `Este cupón venció el ${venceTexto(sub.created_at)}.` }, { status: 410 });
 
   const who = session.name || session.email || "Personal";
   const { error } = await admin

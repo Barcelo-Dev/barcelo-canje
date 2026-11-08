@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession, canRedeem } from "@/lib/roles";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { estaVencido, venceTexto } from "@/lib/vigencia";
 
 export async function POST(request: Request) {
   const session = await getSession();
@@ -16,7 +17,7 @@ export async function POST(request: Request) {
   const admin = createAdminClient();
   const { data: sub } = await admin
     .from("subscribers")
-    .select("full_name, email, room_number, coupon_code, confirmed, coupon_redeemed, coupon_redeemed_at, reward_given, redeemed_by_name")
+    .select("full_name, email, room_number, coupon_code, confirmed, coupon_redeemed, coupon_redeemed_at, reward_given, redeemed_by_name, created_at")
     .eq("coupon_code", code)
     .single();
 
@@ -30,11 +31,21 @@ export async function POST(request: Request) {
     });
   }
 
+  // Vigencia: el cupón vence 1 semana después de crearse.
+  if (estaVencido(sub.created_at)) {
+    return NextResponse.json({
+      status: "expired",
+      client: { name: sub.full_name, coupon: sub.coupon_code },
+      vence: venceTexto(sub.created_at),
+    });
+  }
+
   return NextResponse.json({
     status: "ok",
     client: {
       name: sub.full_name, email: sub.email, room: sub.room_number,
       coupon: sub.coupon_code, confirmed: sub.confirmed,
+      vence: venceTexto(sub.created_at),
     },
   });
 }
