@@ -16,9 +16,10 @@ const roleLabel: Record<string, string> = { camarero: "Camarero", supervisor: "S
 export default function UsuariosClient({ users, currentUserId }: { users: ManagedUser[]; currentUserId: string }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"camarero" | "supervisor">("camarero");
+  const [role, setRole] = useState<"camarero" | "supervisor" | "admin">("camarero");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
@@ -39,10 +40,10 @@ export default function UsuariosClient({ users, currentUserId }: { users: Manage
 
   async function createUser(e: React.FormEvent) {
     e.preventDefault();
-    const ok = await call("create", { email, password, role, fullName });
+    const ok = await call("create", { email, username, password, role, fullName });
     if (ok) {
       setMsg({ type: "ok", text: `Usuario ${email} creado como ${roleLabel[role].toLowerCase()}.` });
-      setEmail(""); setFullName(""); setPassword(""); setRole("camarero");
+      setEmail(""); setUsername(""); setFullName(""); setPassword(""); setRole("camarero");
       router.refresh();
     }
   }
@@ -70,6 +71,12 @@ export default function UsuariosClient({ users, currentUserId }: { users: Manage
               className="w-full rounded-lg border border-barcelo-gray/30 px-4 py-2.5 outline-none focus:border-barcelo-teal focus:ring-2 focus:ring-barcelo-teal/20" />
           </div>
           <div>
+            <label className="mb-1.5 block text-sm font-medium text-barcelo-ink">Nombre de usuario</label>
+            <input type="text" value={username} onChange={e => setUsername(e.target.value)}
+              placeholder="ej. jperez"
+              className="w-full rounded-lg border border-barcelo-gray/30 px-4 py-2.5 outline-none focus:border-barcelo-teal focus:ring-2 focus:ring-barcelo-teal/20" />
+          </div>
+          <div>
             <label className="mb-1.5 block text-sm font-medium text-barcelo-ink">Nombre <span className="text-barcelo-gray">(opcional)</span></label>
             <input type="text" value={fullName} onChange={e => setFullName(e.target.value)}
               className="w-full rounded-lg border border-barcelo-gray/30 px-4 py-2.5 outline-none focus:border-barcelo-teal focus:ring-2 focus:ring-barcelo-teal/20" />
@@ -82,10 +89,11 @@ export default function UsuariosClient({ users, currentUserId }: { users: Manage
           </div>
           <div>
             <label className="mb-1.5 block text-sm font-medium text-barcelo-ink">Rol</label>
-            <select value={role} onChange={e => setRole(e.target.value as "camarero" | "supervisor")}
+            <select value={role} onChange={e => setRole(e.target.value as "camarero" | "supervisor" | "admin")}
               className="w-full rounded-lg border border-barcelo-gray/30 bg-white px-3 py-2.5 outline-none focus:border-barcelo-teal">
               <option value="camarero">Camarero</option>
               <option value="supervisor">Supervisor</option>
+              <option value="admin">Administrador</option>
             </select>
           </div>
           <div className="sm:col-span-2">
@@ -116,7 +124,6 @@ export default function UsuariosClient({ users, currentUserId }: { users: Manage
           <tbody>
             {users.map(u => {
               const isSelf = u.id === currentUserId;
-              const isAdmin = u.role === "admin";
               return (
                 <tr key={u.id} className="border-b border-barcelo-gray/10 last:border-0">
                   <td className="px-4 py-3 font-medium text-barcelo-ink">
@@ -124,18 +131,19 @@ export default function UsuariosClient({ users, currentUserId }: { users: Manage
                   </td>
                   <td className="px-4 py-3 text-barcelo-ink/80">{u.full_name || "—"}</td>
                   <td className="px-4 py-3">
-                    {isAdmin || isSelf ? (
-                      <span className="inline-block rounded-full bg-barcelo-cream px-2.5 py-0.5 text-xs font-medium text-barcelo-deep">{roleLabel[u.role]}</span>
+                    {isSelf ? (
+                      <span className="inline-block rounded-full bg-barcelo-cream px-2.5 py-0.5 text-xs font-medium text-barcelo-deep" title="No puedes cambiar tu propio rol">{roleLabel[u.role]}</span>
                     ) : (
                       <select value={u.role} onChange={e => changeRole(u.id, e.target.value)} disabled={busy}
                         className="rounded-lg border border-barcelo-gray/30 bg-white px-2 py-1 text-sm outline-none focus:border-barcelo-teal">
                         <option value="camarero">Camarero</option>
                         <option value="supervisor">Supervisor</option>
+                        <option value="admin">Administrador</option>
                       </select>
                     )}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    {isAdmin || isSelf ? (
+                    {isSelf ? (
                       <span className="text-xs text-barcelo-gray">—</span>
                     ) : (
                       <button onClick={() => deleteUser(u.id, u.email)} disabled={busy}
