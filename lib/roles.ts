@@ -8,6 +8,7 @@ export type SessionInfo = {
   email: string | null;
   role: Role | null;
   name: string | null;
+  username: string | null;
 };
 
 // Obtiene el usuario logueado y su rol (leído por service_role).
@@ -19,7 +20,7 @@ export async function getSession(): Promise<SessionInfo | null> {
   const admin = createAdminClient();
   const { data: profile } = await admin
     .from("profiles")
-    .select("role, full_name")
+    .select("role, full_name, username")
     .eq("id", user.id)
     .single();
 
@@ -28,6 +29,7 @@ export async function getSession(): Promise<SessionInfo | null> {
     email: user.email ?? null,
     role: (profile?.role as Role) ?? null,
     name: profile?.full_name ?? null,
+    username: profile?.username ?? null,
   };
 }
 

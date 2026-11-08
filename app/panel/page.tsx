@@ -36,16 +36,25 @@ export default async function PanelPage() {
       <header className="border-b border-barcelo-gray/15 bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4 sm:px-6">
           <img src="/logo.png" alt="Barceló Guatemala City" className="h-7 w-auto" />
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 sm:gap-4">
+            {/* Identidad del usuario */}
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-barcelo-teal/10 text-sm font-bold uppercase text-barcelo-deep">
+                {(session.username || session.name || session.email || "?").charAt(0)}
+              </div>
+              <div className="hidden leading-tight sm:block">
+                <p className="text-sm font-semibold text-barcelo-ink">{session.username || session.name || session.email}</p>
+                <p className="text-xs text-barcelo-gray">{roleLabel[session.role ?? ""] ?? "Sin rol"}</p>
+              </div>
+            </div>
+
+            <div className="h-6 w-px bg-barcelo-gray/20" />
+
             {session.role === "admin" && (
               <a href="/panel/usuarios" className="rounded-lg border border-barcelo-gray/30 px-3 py-1.5 text-sm font-medium text-barcelo-ink transition hover:bg-barcelo-cream">
                 Usuarios
               </a>
             )}
-            <div className="hidden text-right sm:block">
-              <p className="text-sm font-medium text-barcelo-ink">{session.name || session.email}</p>
-              <p className="text-xs text-barcelo-gray">{roleLabel[session.role ?? ""] ?? "Sin rol"}</p>
-            </div>
             <form action="/auth/signout" method="post">
               <button type="submit" className="rounded-lg border border-barcelo-gray/30 px-3 py-1.5 text-sm font-medium text-barcelo-ink transition hover:bg-barcelo-cream">
                 Salir
